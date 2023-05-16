@@ -11,7 +11,7 @@ const char *password = "buzz_Lightyear@10";  // Enter WiFi password
 // MQTT Broker
 const char *mqtt_broker = "192.168.1.7";
 const char *topic = "esp8266/test";
-
+const char *publishTopic = "esp8266/device";
 const int mqtt_port = 1883;
 
 WiFiClient espClient;
@@ -39,6 +39,7 @@ void setup() {
   }
   // publish and subscribe
   client.subscribe(topic);
+  client.publish(publishTopic, String("Ready").c_str(), true);
 }
 
 void callback(char *topic, byte *payload, unsigned int length) {
@@ -53,9 +54,9 @@ void callback(char *topic, byte *payload, unsigned int length) {
     digitalWrite(GREENLED, HIGH);
     delay(2000);
     digitalWrite(GREENLED, LOW);
+    client.publish(publishTopic, String("Ready").c_str(), true);
   }
-  Serial.println();
-  Serial.println("-----------------------");
+  
 }
 
 void loop() {
