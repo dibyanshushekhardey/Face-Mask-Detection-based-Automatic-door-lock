@@ -5,15 +5,15 @@ from tensorflow.keras.models import load_model
 from imutils.video import VideoStream
 import numpy as np
 import imutils
-import time
-import cv2
 import os
+import cv2
 import paho.mqtt.client as paho
 import sys
 
+
 client = paho.Client()
 message_received = False
-if client.connect("192.168.1.7", 1883, 60) != 0:
+if client.connect("192.168.247.205", 1883, 60) != 0:
     print("Could not connect to MQTT Broker!")
     sys.exit(-1)
 
@@ -29,7 +29,7 @@ def on_message(client, userdata, message):
 
 def on_connect(client, userdata, flags, rc):
     print("Connected with result code " + str(rc))
-    client.subscribe("esp8266/device")
+    client.subscribe("esp8266/commandToModel")
 
 
 def detect_and_predict_mask(frame, faceNet, maskNet):
@@ -114,7 +114,7 @@ while True:
     # grab the frame from the threaded video stream and resize it
     # to have a maximum width of 400 pixels
     frame = vs.read()
-    frame = imutils.resize(frame, width=400)
+    frame = imutils.resize(frame, width=800)
 
     # detect faces in the frame and determine if they are wearing a
     # face mask or not
@@ -133,11 +133,10 @@ while True:
         # label = "Mask" if mask > withoutMask else "No Mask"
         if mask > withoutMask:
             label = "Mask"
-            print(message_received)
             if message_received:
                 message_received = False
                 print("Opening gate")
-                client.publish("esp8266/test", "Mask", 0)
+                client.publish("python/commandToGate", "Mask", 0)
             else:
                 print("Please wait for the previous person to complete the process")
         else:
@@ -155,8 +154,6 @@ while True:
 
     # show the output frame
     cv2.imshow("Frame", frame)
-    if label == "Mask":
-        time.sleep(2)
     key = cv2.waitKey(1) & 0xFF
     # if the `q` key was pressed, break from the loop
     if key == ord("q"):
