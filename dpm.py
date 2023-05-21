@@ -88,7 +88,7 @@ while True:
                 print("Opening gate")
                 client.publish("python/commandToGate", "Mask", 0)
             else:
-                print("Please wait for the previous person to complete the process")
+                print("wait for process completion")
         else:
             label = "No Mask"
         color = (0, 255, 0) if label == "Mask" else (0, 0, 255)
