@@ -30,9 +30,9 @@ def on_connect(client, userdata, flags, rc):
 
 def dpm(frame, face_net, mask_net):
     (h, w) = frame.shape[:2]
-    blob = cv2.dnn.blobFromImage(frame, 1.0, (224, 224), (104.0, 177.0, 123.0))
+    blb = cv2.dnn.blobFromImage(frame, 1.0, (224, 224), (104.0, 177.0, 123.0))
 
-    face_net.setInput(blob)
+    face_net.setInput(blb)
     detections = face_net.forward()
 
     faces = []
