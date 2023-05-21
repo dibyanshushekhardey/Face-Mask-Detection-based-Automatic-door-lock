@@ -23,36 +23,35 @@ def on_message(client, userdata, message):
     global message_received
     message_received = True
 
-
 def on_connect(client, userdata, flags, rc):
     print("Connected with result code " + str(rc))
     client.subscribe("esp8266/commandToModel")
 
-def dpm(frame, face_net, mask_net):
-    (h, w) = frame.shape[:2]
-    blb = cv2.dnn.blobFromImage(frame, 1.0, (224, 224), (104.0, 177.0, 123.0))
+def dpm(frm, face_net, mask_net):
+    (h, w) = frm.shape[:2]
+    blb = cv2.dnn.blobFromImage(frm, 1.0, (224, 224), (104.0, 177.0, 123.0))
 
     face_net.setInput(blb)
-    detections = face_net.forward()
+    dtcts = face_net.forward()
 
     faces = []
     locs = []
     preds = []
 
-    for i in range(0, detections.shape[2]):
-        confidence = detections[0, 0, i, 2]
+    for i in range(0, dtcts.shape[2]):
+        confidence = dtcts[0, 0, i, 2]
         if confidence > 0.8:
-            box = detections[0, 0, i, 3:7] * np.array([w, h, w, h])
-            (start_x, start_y, end_x, end_y) = box.astype("int")
-            (start_x, start_y) = (max(0, start_x), max(0, start_y))
-            (end_x, end_y) = (min(w - 1, end_x), min(h - 1, end_y))
-            face = frame[start_y:end_y, start_x:end_x]
+            bx = dtcts[0, 0, i, 3:7] * np.array([width, height, width, height])
+            (strtX, strtY, endX, endY) = bx.astype("int")
+            (strtX, strtY) = (max(0, strtX), max(0, strtY))
+            (endX, endY) = (min(width - 1, endX), min(height - 1, endY))
+            face = frm[strtY:endY, strtX:endX]
             face = cv2.cvtColor(face, cv2.COLOR_BGR2RGB)
             face = cv2.resize(face, (224, 224))
             face = img_to_array(face)
             face = preprocess_input(face)
             faces.append(face)
-            locs.append((start_x, start_y, end_x, end_y))
+            locs.append((strtX, strtY, endX, endY))
     if len(faces) > 0:
         faces = np.array(faces, dtype="float32")
         preds = mask_net.predict(faces, batch_size=32)
@@ -76,13 +75,13 @@ while True:
     frame = imutils.resize(frame, width=800)
     (locs, preds) = detect_and_predict_mask(frame, face_net, mask_net)
 
-    label = ""
-    for (box, pred) in zip(locs, preds):
-        (start_x, start_y, end_x, end_y) = box
+    output = ""
+    for (bx, pred) in zip(locs, preds):
+        (strtX, strtY, endX, endY) = bx
         (mask, without_mask) = pred
 
         if mask > without_mask:
-            label = "Mask"
+            output = "Mask"
             if message_received:
                 message_received = False
                 print("Opening gate")
@@ -90,14 +89,14 @@ while True:
             else:
                 print("wait for process completion")
         else:
-            label = "No Mask"
-        color = (0, 255, 0) if label == "Mask" else (0, 0, 255)
+            output = "No Mask"
+        clr = (0, 255, 0) if output == "Mask" else (0, 0, 255)
 
-        label = "{}: {:.2f}%".format(label, max(mask, without_mask) * 100)
+        output = "{}: {:.2f}%".format(output, max(mask, without_mask) * 100)
 
-        cv2.putText(frame, label, (start_x, start_y - 10),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.45, color, 2)
-        cv2.rectangle(frame, (start_x, start_y), (end_x, end_y), color, 2)
+        cv2.putText(frame, output, (strtX, strtY - 10),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.45, clr, 2)
+        cv2.rectangle(frame, (strtX, strtY), (endX, endY), clr, 2)
 
     cv2.imshow("Frame", frame)
     key = cv2.waitKey(1) & 0xFF
